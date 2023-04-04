@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #4CAF50;
+            color: white;
+            text-align: center;
+            padding: 1em;
+            font-size: 1.5em;
+        }
+
+        #todoList {
+            margin: 2em;
+        }
+
+        #todoList ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        #todoList li {
+            background-color: #f9f9f9;
+            padding: 1em;
+            margin-bottom: 1em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        form {
+            margin: 2em;
+        }
+
+        form label {
+            display: block;
+            margin-bottom: 1em;
+        }
+
+        form input[type="text"],
+        form textarea {
+            width: 100%;
+            padding: 1em;
+            border: 1px solid #ccc;
+        }
+
+        form input[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            padding: 1em 2em;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <header>Todo App</header>
+    <div id="todoList">
+        <ul></ul>
+    </div>
+    <form id="addTodoForm">
+        <label>
+            Description:
+            <input type="text" name="description" required />
+        </label>
+        <label>
+            Start Date:
+            <input type="datetime-local" name="startdate" required />
+        </label>
+        <label>
+            End Date:
+            <input type="datetime-local" name="enddate" required />
+        </label>
+        <input type="submit" value="Add Todo" />
+    </form>
+    <script>
+        const API_BASE_URL = '/data-api/api/todo';
+
+        function getTodos() {
+            fetch(API_BASE_URL)
+                .then(response => response.json())
+                .then(data => {
+                    displayTodos(data.value);
+                })
+                .catch(error => {
+                    console.error('Error fetching todos:', error);
+                });
+        }
+
+        function displayTodos(todos) {
+            const todoListElement = document.querySelector('#todoList ul');
+            todoListElement.innerHTML = '';
+
+            todos.forEach(todo => {
+                const listItem = document.createElement('li');
+                listItem.innerHTML = `
+                    ${todo.description} (Start: ${todo.startdate}, End: ${todo.enddate})
+                    <button data-id="${todo.idtodos}">Delete</button>
+                `;
+                listItem.querySelector('button').addEventListener('click', () => {
+                    deleteTodo(todo.idtodos);
+                });
+                todoListElement.appendChild(listItem);
+            });
+        }
+
+        function addTodo(todoData) {
+            fetch(API_BASE_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(todoData),
+            })
+                .then(response => {
+                    if (response.ok) {
+                        getTodos();
+                    } else {
+                        throw new
+                            Error('Error adding todo: ${ response.statusText }');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error adding todo:', error);
+                });
+        }
+        function deleteTodo(id) {
+            fetch(`${API_BASE_URL}/idtodos/${id}`, {
+                method: 'DELETE',
+            })
+                .then(response => {
+                    if (response.ok) {
+                        getTodos();
+                    } else {
+                        throw new Error(`Error deleting todo: ${response.statusText}`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting todo:', error);
+                });
+        }
+
+        document.getElementById('addTodoForm').addEventListener('submit', event => {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const todoData = {
+                description: formData.get('description'),
+                startdate: formData.get('startdate'),
+                enddate: formData.get('enddate'),
+            };
+            addTodo(todoData);
+            event.target.reset();
+        });
+
+        getTodos();
+    </script>
+</body>
+
+</html>
